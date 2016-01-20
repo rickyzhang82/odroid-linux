@@ -65,7 +65,9 @@ static int odroid_hw_params(struct snd_pcm_substream *substream,
 	int pll, div, sclk, bfs, psr, rfs, ret;
 	unsigned long rclk;
 
-	switch (params_format(params)) {
+   printk("%s[%d] : format=%ld\n", __func__, __LINE__, params_format(params));
+	
+   switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_U24:
 	case SNDRV_PCM_FORMAT_S24:
 		bfs = 48;
@@ -78,7 +80,9 @@ static int odroid_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	switch (params_rate(params)) {
+   printk("%s[%d] : rate=%ld\n", __func__, __LINE__, params_rate(params));
+	
+   switch (params_rate(params)) {
 	case 16000:
 	case 22050:
 	case 24000:
@@ -109,7 +113,9 @@ static int odroid_hw_params(struct snd_pcm_substream *substream,
 
 	rclk = params_rate(params) * rfs;
 
-	switch (rclk) {
+   printk("%s[%d] : rclk=%ld\n", __func__, __LINE__, rclk);
+	
+   switch (rclk) {
 	case 4096000:
 	case 5644800:
 	case 6144000:
@@ -149,44 +155,67 @@ static int odroid_hw_params(struct snd_pcm_substream *substream,
 
 	set_aud_pll_rate(pll);
 
+   printk("%s[%d] : format=%ld, rate = %ld, bfs=%ld, rfs=%ld, rclk=%ld, psr=%ld, sclk=%ld, div=%ld \n",
+            __func__,__LINE__, params_format(params), params_rate(params), bfs, rfs, rclk, psr, sclk, div );
+
 	/* Set CPU DAI configuration */
 	if(!is_dummy_codec) {
     	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S
     			| SND_SOC_DAIFMT_NB_NF
     			| SND_SOC_DAIFMT_CBS_CFS);
-    	if (ret < 0)
+    	if (ret < 0){
+         printk("%s[%d] : snd_soc_dai_set_fmt failed\n",
+                __func__,__LINE__);
     		return ret;
+      }
 	}
 
 	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S
 			| SND_SOC_DAIFMT_NB_NF
 			| SND_SOC_DAIFMT_CBS_CFS);
-	if (ret < 0)
-		return ret;
-
+	if (ret < 0){
+	   printk("%s[%d] : snd_soc_dai_set_fmt failed\n",
+                __func__,__LINE__);
+      return ret;
+   }
 	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_OPCLK,
 					0, MOD_OPCLK_PCLK);
-	if (ret < 0)
-		return ret;
-
-	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_RCLKSRC_1,
+	if (ret < 0){
+      printk("%s[%d] : snd_soc_dai_set_sysclk failed\n",
+                __func__,__LINE__);
+      return ret;
+   }
+	
+   ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_RCLKSRC_1,
 					rclk, SND_SOC_CLOCK_OUT);
-	if (ret < 0)
-		return ret;
-
-	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_CDCLK,
+	if (ret < 0){
+      printk("%s[%d] : snd_soc_dai_set_sysclk failed\n",
+                __func__,__LINE__);
+      return ret;
+   }
+	
+   ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_CDCLK,
 					rfs, SND_SOC_CLOCK_OUT);
-	if (ret < 0)
-		return ret;
+	if (ret < 0){
+      printk("%s[%d] : snd_soc_dai_set_sysclk failed\n",
+                __func__,__LINE__);
+      return ret;
+   }
 
 	ret = snd_soc_dai_set_clkdiv(cpu_dai, SAMSUNG_I2S_DIV_BCLK, bfs);
-	if (ret < 0)
-		return ret;
+	if (ret < 0){
+      printk("%s[%d] : snd_soc_dai_set_clkdiv failed\n",
+                __func__,__LINE__);
+      return ret;
+   }
 
 	if(!is_dummy_codec) {
     	ret = snd_soc_dai_set_sysclk(codec_dai, 0, rclk, SND_SOC_CLOCK_IN);
-    	if (ret < 0)
-    		return ret;
+	   if (ret < 0){
+         printk("%s[%d] : snd_soc_dai_set_clkdiv failed\n",
+                   __func__,__LINE__);
+         return ret;
+      }
     }
 
 	return 0;
